@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Consulta de endereço por CEP - Tema Danganronpa">
+    <meta name="theme-color" content="#1a0a0a">
+    <title>CONSULTA DE CEP | Hope's Peak</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-deep: #0a0505;
+            --bg: #120808;
+            --surface: #1a0f0f;
+            --surface-2: #241414;
+            --text: #f0e6e6;
+            --text-muted: #a08080;
+            --border: #3a2020;
+            --primary: #e60012;
+            --primary-glow: #ff1a1a;
+            --accent: #ff4d6d;
+            --checkered-a: #0d0d0d;
+            --white: #f5f5f5;
+            --black: #0a0a0a;
+            --success: #00c853;
+            --danger: #ff1744;
+            --radius: 4px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { min-width: 320px; scroll-behavior: smooth; }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            padding-bottom: 100px;
+            background-color: var(--bg-deep);
+            background-image:
+                linear-gradient(45deg, var(--checkered-a) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--checkered-a) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, var(--checkered-a) 75%),
+                linear-gradient(-45deg, transparent 75%, var(--checkered-a) 75%),
+                radial-gradient(ellipse at top, rgba(230, 0, 18, 0.15), transparent 60%);
+            background-size: 40px 40px, 40px 40px, 40px 40px, 40px 40px, 100% 100%;
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0, center;
+            color: var(--text);
+            font-family: 'Share Tech Mono', ui-monospace, monospace;
+            line-height: 1.5;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(230, 0, 18, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 77, 109, 0.06) 0%, transparent 35%);
+            pointer-events: none;
+            z-index: 0;
+            animation: pulseBg 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.15) 2px,
+                rgba(0, 0, 0, 0.15) 4px
+            );
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.35;
+        }
+
+        .app {
+            width: min(100%, 780px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            position: relative;
+            overflow: visible;
+            background: var(--surface);
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            box-shadow:
+                0 0 0 2px var(--black),
+                0 0 30px rgba(230, 0, 18, 0.4),
+                inset 0 0 60px rgba(0, 0, 0, 0.6);
+            animation: cardAppear 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes cardAppear {
+            0% { opacity: 0; transform: scale(0.92) translateY(30px); filter: blur(8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 12px;
+            background: repeating-linear-gradient(90deg, var(--black) 0 12px, var(--white) 12px 24px);
+            z-index: 2;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 12px;
+            background: repeating-linear-gradient(90deg, var(--white) 0 12px, var(--black) 12px 24px);
+            z-index: 2;
+            border-radius: 0 0 var(--radius) var(--radius);
+        }
+
+        .header {
+            padding: 40px 32px 28px;
+            border-bottom: 2px solid var(--border);
+            background: linear-gradient(180deg, #1f0a0a 0%, var(--surface) 100%);
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .header::before {
+            content: "HOPE'S PEAK ACADEMY";
+            position: absolute;
+            top: 12px;
+            left: 32px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            color: var(--primary);
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .eyebrow {
+            margin: 18px 0 8px;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .eyebrow::before {
+            content: "●";
+            color: var(--primary);
+            animation: blink 1.2s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        h1 {
+            margin: 0;
+            font-family: 'Black Ops One', 'Orbitron', sans-serif;
+            font-size: clamp(1.7rem, 5vw, 2.4rem);
+            line-height: 1.1;
+            color: var(--white);
+            text-shadow: 3px 3px 0 var(--primary), -1px -1px 0 var(--black);
+            letter-spacing: 0.04em;
+            animation: glitchTitle 4s infinite;
+        }
+
+        @keyframes glitchTitle {
+            0%, 90%, 100% {
+                text-shadow: 3px 3px 0 var(--primary), -1px -1px 0 var(--black);
+                transform: none;
+            }
+            92% {
+                text-shadow: -3px 0 0 #00ffff, 3px 0 0 var(--primary);
+                transform: translate(-2px, 1px);
+            }
+            94% {
+                text-shadow: 3px 0 0 #00ffff, -3px 0 0 var(--primary);
+                transform: translate(2px, -1px);
+            }
+            96% {
+                text-shadow: -2px 0 0 #00ffff, 2px 0 0 var(--primary);
+                transform: none;
+            }
+        }
+
+        .subtitle {
+            margin: 14px 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            max-width: 480px;
+        }
+
+        form { padding: 32px; position: relative; }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .search-row .field { margin-bottom: 0; }
+
+        .field {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        input {
+            width: 100%;
+            min-height: 52px;
+            padding: 0 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            outline: none;
+            background: var(--surface-2);
+            color: var(--text);
+            font: inherit;
+            font-size: 1.05rem;
+            letter-spacing: 0.08em;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        input::placeholder { color: #5a4040; letter-spacing: 0.15em; }
+
+        input:focus {
+            border-color: var(--primary);
+            background: #1f0c0c;
+            box-shadow: 0 0 0 3px rgba(230, 0, 18, 0.25), 0 0 20px rgba(230, 0, 18, 0.3);
+        }
+
+        input[readonly] {
+            color: #d0b0b0;
+            cursor: default;
+            background: #160c0c;
+            border-style: dashed;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        button {
+            min-height: 52px;
+            padding: 0 22px;
+            border: 2px solid transparent;
+            border-radius: var(--radius);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        button:hover:not(:disabled)::before { transform: translateX(100%); }
+        button:hover:not(:disabled) { transform: translateY(-2px); }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+        .primary {
+            background: var(--primary);
+            color: var(--white);
+            border-color: #ff3333;
+            box-shadow: 0 4px 0 #8a000a, 0 0 20px rgba(230, 0, 18, 0.4);
+        }
+
+        .primary:hover:not(:disabled) {
+            background: var(--primary-glow);
+            box-shadow: 0 4px 0 #8a000a, 0 0 30px rgba(255, 26, 26, 0.6);
+        }
+
+        .primary:active:not(:disabled) { box-shadow: 0 1px 0 #8a000a; }
+
+        .secondary {
+            background: var(--surface-2);
+            color: var(--text);
+            border-color: var(--border);
+            box-shadow: 0 4px 0 #0a0505;
+        }
+
+        .secondary:hover:not(:disabled) {
+            background: #2a1818;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .status {
+            max-height: 0;
+            margin: 0;
+            opacity: 0;
+            overflow: hidden;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            letter-spacing: 0.04em;
+            transition: max-height 0.35s ease, margin 0.35s ease, opacity 0.35s ease;
+        }
+
+        .status.visible {
+            max-height: 70px;
+            margin: 18px 0 0;
+            opacity: 1;
+        }
+
+        .status.error {
+            color: var(--danger);
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(255, 23, 68, 0.5);
+        }
+
+        .status.success {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 28px;
+            padding-top: 28px;
+            border-top: 2px dashed var(--border);
+            position: relative;
+        }
+
+        .results::before {
+            content: "◆ RESULTADO DA INVESTIGAÇÃO ◆";
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            padding: 0 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        .results .field { margin: 0; }
+        .results .field:first-child { grid-column: 1 / -1; }
+
+        .footer {
+            padding: 0 32px 32px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-align: center;
+            letter-spacing: 0.06em;
+        }
+
+        .footer span { color: var(--primary); font-weight: 700; }
+
+        /* ===== BROCHE MONOKUMA ===== */
+        .monokuma-brooch {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 96px;
+            height: 96px;
+            z-index: 5;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 35% 30%, #2a2a2a 0%, #0a0a0a 70%),
+                #111;
+            border: 4px solid var(--primary);
+            box-shadow:
+                0 0 0 3px #1a0505,
+                0 0 0 6px rgba(230, 0, 18, 0.35),
+                0 8px 20px rgba(0, 0, 0, 0.7),
+                inset 0 0 18px rgba(0, 0, 0, 0.8),
+                0 0 25px rgba(230, 0, 18, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            animation: broochFloat 3.2s ease-in-out infinite;
+        }
+
+        .monokuma-brooch::before {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        .monokuma-brooch img {
+            width: 88%;
+            height: 88%;
+            object-fit: contain;
+            object-position: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            pointer-events: none;
+            user-select: none;
+        }
+
+        @keyframes broochFloat {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-7px) rotate(3deg); }
+        }
+
+        .loading-ring {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border: 3px solid transparent;
+            border-top-color: var(--white);
+            border-right-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        button.loading .loading-ring { display: inline-block; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== PLAYER DE MÚSICA ===== */
+        .music-player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            background: linear-gradient(180deg, transparent, #0a0505 25%);
+            padding: 14px 16px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .music-player .track-info {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .music-player .track-info strong {
+            color: var(--primary);
+            display: block;
+            font-size: 0.78rem;
+            margin-bottom: 2px;
+        }
+
+        .music-btn {
+            min-height: 42px;
+            padding: 0 18px;
+            border: 2px solid var(--primary);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--white);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .music-btn:hover {
+            background: var(--primary);
+            box-shadow: 0 0 20px rgba(230, 0, 18, 0.5);
+        }
+
+        .music-btn.playing {
+            background: var(--primary);
+            animation: pulseBtn 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseBtn {
+            0%, 100% { box-shadow: 0 0 10px rgba(230, 0, 18, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(230, 0, 18, 0.8); }
+        }
+
+        audio {
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 12px; padding-bottom: 120px; place-items: start center; }
+            .header, form { padding: 28px 18px; }
+            .header::before { left: 18px; font-size: 0.55rem; }
+            .monokuma-brooch {
+                width: 74px;
+                height: 74px;
+                top: 14px;
+                right: 12px;
+                border-width: 3px;
+            }
+            .search-row { grid-template-columns: 1fr; }
+            .search-row button { width: 100%; }
+            .results { grid-template-columns: 1fr; }
+            .results .field:first-child { grid-column: auto; }
+            .results::before { font-size: 0.58rem; }
+            .button-group { flex-direction: column; }
+            .button-group button { width: 100%; }
+            .footer { padding: 0 18px 28px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="app">
+        <section class="card" aria-labelledby="page-title">
+            <!-- Broche Monokuma com a arte enviada (fundo removido) -->
+            <div class="monokuma-brooch" title="Monokuma Brooch" aria-hidden="true">
+                <img src="monokuma-face.png" alt="Monokuma" width="80" height="80">
+            </div>
+
+            <header class="header">
+                <p class="eyebrow">Class Trial • Investigação</p>
+                <h1 id="page-title">CONSULTA DE CEP</h1>
+                <p class="subtitle">
+                    Digite o CEP e descubra o endereço. Não há esperança… só dados precisos.
+                </p>
+            </header>
+
+            <form id="frmCEP" novalidate>
+                <div class="search-row">
+                    <div class="field">
+                        <label for="cep">CEP</label>
+                        <input
+                            id="cep"
+                            type="text"
+                            name="cep"
+                            placeholder="00000-000"
+                            inputmode="numeric"
+                            autocomplete="postal-code"
+                            maxlength="9"
+                            pattern="\d{5}-?\d{3}"
+                            required
+                        >
+                    </div>
+
+                    <button id="btnPesquisar" class="primary" type="submit">
+                        <span class="loading-ring"></span>
+                        Investigar 🔎
+                    </button>
+                </div>
+
+                <p id="status" class="status" role="status" aria-live="polite"></p>
+
+                <div class="results" aria-live="polite">
+                    <div class="field">
+                        <label for="logradouro">Logradouro</label>
+                        <input id="logradouro" type="text" name="logradouro" readonly>
+                    </div>
+
+                    <div class="field">
+                        <label for="bairro">Bairro</label>
+                        <input id="bairro" type="text" name="bairro" readonly>
+                    </div>
+
+                    <div class="field">
+                        <label for="cidade">Cidade</label>
+                        <input id="cidade" type="text" name="cidade" readonly>
+                    </div>
+
+                    <div class="field">
+                        <label for="estado">Estado</label>
+                        <input id="estado" type="text" name="estado" readonly>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="btnLimpar" class="secondary" type="button">
+                        Limpar Evidências 🧹
+                    </button>
+                </div>
+            </form>
+
+            <footer class="footer">
+                Dados obtidos via <span>ViaCEP</span> • Tema inspirado em <span>Danganronpa</span>
+            </footer>
+        </section>
+    </main>
+
+    <!-- Áudio local (coloque o MP3 na mesma pasta com este nome) -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="lets-kill-each-other-kpszh.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="music-player">
+        <div class="track-info">
+            <strong>Let’s Kill Each Other</strong>
+            Remix by K-PSZH • Danganronpa V3
+        </div>
+        <button id="btnMusic" class="music-btn" type="button" aria-label="Tocar ou pausar música">
+            ▶ TOCAR
+        </button>
+    </div>
+
+    <script src="scripts.js" defer></script>
+</body>
+</html>
